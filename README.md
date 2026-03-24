@@ -1,5 +1,26 @@
 # Taskkill-Tasklist
-Recreates a lightweight version of Window's taskkill and tasklist using Win32 API. Project for GMU DFOR 740.
+Recreates a lightweight version of Window's taskkill and tasklist using Win32 API. Provides information on how to detect both for defenders. Project for GMU DFOR 740.
+
+## Table of Contents
+<details>
+<summary>See TOC</summary>
+
+- [Tasklist](#tasklist)
+    - [Usage](#usage)
+    - [Output](#output)
+    - [Win32 API Headers Used](#win32-api-headers-used)
+- [Taskkill](#taskkill)
+    - [Usage](#usage-1)
+    - [Output](#output-1)
+    - [Win32 API Headers Used](#win32-api-headers-used-1)
+- [Montioring Tools](#montioring-tools)
+    - [Sysmon](#sysmon)
+        - [Tasklist](#tasklist-1)
+        - [Taskkill](#taskkill-1)
+    - [Procmon](#procmon)
+        - [Tasklist](#tasklist-2)
+        - [Taskkill](#taskkill-2)
+</details>
 
 ## Tasklist
 ### Usage
