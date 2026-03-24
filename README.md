@@ -4,7 +4,7 @@ Recreates a lightweight version of Window's taskkill and tasklist using Win32 AP
 ## Tasklist
 ### Usage
 
-Basic usage:
+#### Basic usage:
 
 ```powershell
 tasklist.exe
@@ -13,13 +13,13 @@ tasklist.exe /SVC
 tasklist.exe /?
 ```
 
-Syntax:
+#### Syntax:
 
 ```text
 TASKLIST [/SVC | /V] [/?]
 ```
 
-Options:
+#### Options:
 
 | Option | Description |
 | --- | --- |
@@ -27,13 +27,13 @@ Options:
 | `/V` | Displays verbose task information (status, user, CPU time, window title). |
 | `/?` | Displays help/usage text. |
 
-Notes:
+#### Notes:
 
 - `/V` and `/SVC` cannot be used together.
 - Running with no options prints the default process table.
 
-Basic example output:
-
+### Output
+#### Basic example output:
 ```text
 Image Name                     PID Session Name        Session#    Mem Usage
 ========================= ======== ================ =========== ============
@@ -43,7 +43,7 @@ explorer.exe                  8420 Console                    1    95,432 K
 notepad.exe                  12644 Console                    1     8,600 K
 ```
 
-Verbose example output:
+#### Verbose example output:
 
 ```text
 Image Name                     PID Session Name        Session#    Mem Usage Status          User Name                                              CPU Time Window Title
@@ -52,7 +52,7 @@ explorer.exe                  8420 Console                    1     95,432 K RUN
 notepad.exe                  12644 Console                    1      8,600 K RUNNING         DESKTOP\nate                                          000:00:02 notes.txt - Notepad
 ```
 
-Services view example output:
+#### Services view example output:
 
 ```text
 Image Name                     PID Services
@@ -118,7 +118,7 @@ svchost.exe                   1132 RpcEptMapper, RpcSs
 ## Taskkill
 ### Usage
 
-Basic usage:
+#### Basic usage:
 
 ```powershell
 taskkill.exe /PID 12644
@@ -128,14 +128,14 @@ taskkill.exe /S server01 /U DOMAIN\admin /PID 8080
 taskkill.exe /?
 ```
 
-Syntax:
+#### Syntax:
 
 ```text
 TASKKILL [/S system [/U username [/P [password]]]]
          { [/PID processid | /IM imagename] } [/T] [/F] [/?]
 ```
 
-Options:
+#### Options:
 
 | Option | Description |
 | --- | --- |
@@ -148,11 +148,12 @@ Options:
 | `/P [password]` | Password for `/U`. If omitted after `/P`, tool prompts interactively. Requires `/U` and `/S`. |
 | `/?` | Displays help/usage text. |
 
-Notes:
+#### Notes:
 
 - At least one `/PID` or `/IM` must be provided.
 - `/U` and `/P` are valid only when `/S` is used.
 
+### Output
 Basic example output:
 
 ```text
