@@ -1,9 +1,8 @@
 # Taskkill-Tasklist
 Recreates a lightweight version of Window's taskkill and tasklist using Win32 API. Project for GMU DFOR 740.
 
-## Usage
-
-### Tasklist
+## Tasklist
+### Usage
 
 Basic usage:
 
@@ -61,64 +60,6 @@ Image Name                     PID Services
 svchost.exe                   1048 DcomLaunch, PlugPlay, Power
 svchost.exe                   1132 RpcEptMapper, RpcSs
 ```
-
-### Taskkill
-
-Basic usage:
-
-```powershell
-taskkill.exe /PID 12644
-taskkill.exe /IM notepad.exe
-taskkill.exe /F /IM notepad.exe /T
-taskkill.exe /S server01 /U DOMAIN\admin /P /PID 8080
-taskkill.exe /?
-```
-
-Syntax:
-
-```text
-TASKKILL [/S system [/U username [/P [password]]]]
-         { [/PID processid | /IM imagename] } [/T] [/F] [/?]
-```
-
-Options:
-
-| Option | Description |
-| --- | --- |
-| `/PID <processid>` | Terminates a process by PID. Can be specified multiple times. |
-| `/IM <imagename>` | Terminates by image name (supports `*` and `?` wildcards). Can be specified multiple times. |
-| `/F` | Forcefully terminates process(es). |
-| `/T` | Terminates the target process and child processes. |
-| `/S <system>` | Specifies a remote system. |
-| `/U <[domain\]user>` | User context for remote operations. Requires `/S`. |
-| `/P [password]` | Password for `/U`. If omitted after `/P`, tool prompts interactively. Requires `/U` and `/S`. |
-| `/?` | Displays help/usage text. |
-
-Notes:
-
-- At least one `/PID` or `/IM` must be provided.
-- `/U` and `/P` are valid only when `/S` is used.
-
-Basic example output:
-
-```text
-SUCCESS: Sent termination signal to the process "notepad.exe" with PID 12644.
-```
-
-Forced/tree example output:
-
-```text
-SUCCESS: The process with PID 13220 (child process of PID 12644) has been terminated.
-SUCCESS: The process "notepad.exe" with PID 12644 has been terminated.
-```
-
-Basic error example output:
-
-```text
-ERROR: The process "missing.exe" not found.
-```
-
-## Tasklist
 ### Win32 API Headers Used
 <details>
 <summary><strong><code>windows.h</code></strong></summary>
@@ -175,6 +116,62 @@ ERROR: The process "missing.exe" not found.
 </details>
 
 ## Taskkill
+### Usage
+
+Basic usage:
+
+```powershell
+taskkill.exe /PID 12644
+taskkill.exe /IM notepad.exe
+taskkill.exe /F /IM notepad.exe /T
+taskkill.exe /S server01 /U DOMAIN\admin /PID 8080
+taskkill.exe /?
+```
+
+Syntax:
+
+```text
+TASKKILL [/S system [/U username [/P [password]]]]
+         { [/PID processid | /IM imagename] } [/T] [/F] [/?]
+```
+
+Options:
+
+| Option | Description |
+| --- | --- |
+| `/PID <processid>` | Terminates a process by PID. Can be specified multiple times. |
+| `/IM <imagename>` | Terminates by image name (supports `*` and `?` wildcards). Can be specified multiple times. |
+| `/F` | Forcefully terminates process(es). |
+| `/T` | Terminates the target process and child processes. |
+| `/S <system>` | Specifies a remote system. |
+| `/U <[domain\]user>` | User context for remote operations. Requires `/S`. |
+| `/P [password]` | Password for `/U`. If omitted after `/P`, tool prompts interactively. Requires `/U` and `/S`. |
+| `/?` | Displays help/usage text. |
+
+Notes:
+
+- At least one `/PID` or `/IM` must be provided.
+- `/U` and `/P` are valid only when `/S` is used.
+
+Basic example output:
+
+```text
+SUCCESS: Sent termination signal to the process "notepad.exe" with PID 12644.
+```
+
+Forced/tree example output:
+
+```text
+SUCCESS: The process with PID 13220 (child process of PID 12644) has been terminated.
+SUCCESS: The process "notepad.exe" with PID 12644 has been terminated.
+```
+
+Basic error example output:
+
+```text
+ERROR: The process "missing.exe" not found.
+```
+
 ### Win32 API Headers Used
 <details>
 <summary><strong><code>windows.h</code></strong></summary>
