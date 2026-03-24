@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Taskkill.vcxproj" Id="676de868-0bd2-4a58-ba57-560886b2580e" />
+</Solution>
