@@ -49,8 +49,8 @@ Verbose example output:
 ```text
 Image Name                     PID Session Name        Session#    Mem Usage Status          User Name                                              CPU Time Window Title
 ========================= ======== ================ =========== ============ =============== ================================================== ============ =======================================================================
-explorer.exe                  8420 Console                    1     95,432 K RUNNING         DESKTOP\nate                                         000:02:13   File Explorer
-notepad.exe                  12644 Console                    1      8,600 K RUNNING         DESKTOP\nate                                         000:00:02   notes.txt - Notepad
+explorer.exe                  8420 Console                    1     95,432 K RUNNING         DESKTOP\nate                                          000:02:13 File Explorer
+notepad.exe                  12644 Console                    1      8,600 K RUNNING         DESKTOP\nate                                          000:00:02 notes.txt - Notepad
 ```
 
 Services view example output:
