@@ -20,6 +20,7 @@
 
 namespace {
 
+// Parsed command-line switches for local and remote termination scenarios.
 struct Options {
     bool showHelp = false;
     bool force = false;
@@ -32,6 +33,7 @@ struct Options {
     std::vector<std::wstring> imageNames;
 };
 
+// Minimal process model used for matching targets and building /T child maps.
 struct ProcessInfo {
     DWORD pid = 0;
     DWORD parentPid = 0;
@@ -40,6 +42,7 @@ struct ProcessInfo {
 
 std::wstring FormatSystemMessage(DWORD error);
 
+// RAII wrapper for Win32 HANDLE values that use CloseHandle.
 class ScopedHandle {
 public:
     ScopedHandle() = default;
@@ -87,6 +90,7 @@ private:
     HANDLE handle_ = nullptr;
 };
 
+// RAII wrapper for WTS server handles that use WTSCloseServer.
 class ScopedWtsServerHandle {
 public:
     ScopedWtsServerHandle() = default;
@@ -117,6 +121,7 @@ private:
     HANDLE handle_ = nullptr;
 };
 
+// RAII guard that reverts impersonation on scope exit.
 class ScopedImpersonation {
 public:
     ScopedImpersonation() = default;
@@ -151,12 +156,14 @@ private:
     bool active_ = false;
 };
 
+// Normalize command-line switches to uppercase for case-insensitive parsing.
 std::wstring ToUpper(std::wstring value) {
     std::transform(value.begin(), value.end(), value.begin(),
         [](wchar_t c) { return static_cast<wchar_t>(std::towupper(c)); });
     return value;
 }
 
+// Accept either SERVER or \\SERVER forms and normalize to SERVER.
 std::wstring NormalizeRemoteSystemName(std::wstring value) {
     while (value.rfind(L"\\\\", 0) == 0) {
         value.erase(0, 2);
@@ -164,6 +171,7 @@ std::wstring NormalizeRemoteSystemName(std::wstring value) {
     return value;
 }
 
+// Convert a Win32 error code into a trimmed, human-readable message.
 std::wstring FormatSystemMessage(DWORD error) {
     LPWSTR buffer = nullptr;
     const DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
@@ -181,6 +189,7 @@ std::wstring FormatSystemMessage(DWORD error) {
     return message;
 }
 
+// Split DOMAIN\\User into separate components for LogonUserW.
 void SplitAccountName(const std::wstring& accountName, std::wstring& domain, std::wstring& userName) {
     const size_t slash = accountName.find(L'\\');
     if (slash == std::wstring::npos) {
@@ -193,6 +202,7 @@ void SplitAccountName(const std::wstring& accountName, std::wstring& domain, std
     userName = accountName.substr(slash + 1);
 }
 
+// Read a password from the console while disabling local echo.
 bool PromptForPassword(const std::wstring& userName, std::wstring& password) {
     std::wcout << L"Type the password for " << userName << L": ";
 
@@ -216,11 +226,14 @@ bool PromptForPassword(const std::wstring& userName, std::wstring& password) {
     return readSucceeded;
 }
 
+// Create an impersonation token for remote operations when /U is supplied.
 bool CreateRemoteLogonToken(const Options& options, ScopedHandle& token, std::wstring& errorMessage) {
+    // No explicit remote user means we keep the current security context.
     if (options.user.empty()) {
         return true;
     }
 
+    // /P can be omitted, in which case we ask interactively.
     std::wstring password = options.password;
     if (options.promptForPassword && !PromptForPassword(options.user, password)) {
         errorMessage = L"Could not read the password from the console.";
@@ -235,6 +248,7 @@ bool CreateRemoteLogonToken(const Options& options, ScopedHandle& token, std::ws
         return false;
     }
 
+    // LOGON32_LOGON_NEW_CREDENTIALS is typically used for network/remote access.
     HANDLE rawToken = nullptr;
     if (!LogonUserW(
             userName.c_str(),
@@ -251,26 +265,33 @@ bool CreateRemoteLogonToken(const Options& options, ScopedHandle& token, std::ws
     return true;
 }
 
+// Recursive wildcard matcher that supports `*` and `?`.
 bool WildcardMatchRecursive(const wchar_t* pattern, const wchar_t* text) {
+    // Base case: a finished pattern only matches a finished text.
     if (*pattern == L'\0') {
         return *text == L'\0';
     }
 
     if (*pattern == L'*') {
+        // `*` can match zero chars (pattern+1) or one+ chars (text+1).
         return WildcardMatchRecursive(pattern + 1, text) || (*text != L'\0' && WildcardMatchRecursive(pattern, text + 1));
     }
 
     if (*pattern == L'?') {
+        // `?` matches exactly one character.
         return *text != L'\0' && WildcardMatchRecursive(pattern + 1, text + 1);
     }
 
+    // Regular character match is case-insensitive.
     return std::towupper(*pattern) == std::towupper(*text) && WildcardMatchRecursive(pattern + 1, text + 1);
 }
 
+// Case-insensitive wildcard match wrapper for image names.
 bool WildcardMatch(const std::wstring& pattern, const std::wstring& text) {
     return WildcardMatchRecursive(pattern.c_str(), text.c_str());
 }
 
+// Print command-line help similar to the Windows taskkill utility.
 void PrintHelp() {
     std::wcout << L"TASKKILL [/S system [/U username [/P [password]]]]\n";
     std::wcout << L"         { [/PID processid | /IM imagename] } [/T] [/F] [/?]\n\n";
@@ -291,6 +312,7 @@ void PrintHelp() {
     std::wcout << L"    TASKKILL /F /IM cmd.exe /T\n";
 }
 
+// Parse and validate a PID argument as a non-zero decimal value.
 bool ParsePid(const std::wstring& value, DWORD& pid) {
     if (value.empty()) {
         return false;
@@ -306,8 +328,10 @@ bool ParsePid(const std::wstring& value, DWORD& pid) {
     return pid != 0;
 }
 
+// Parse supported taskkill switches and enforce switch dependencies.
 bool ParseArgs(int argc, wchar_t* argv[], Options& options) {
     for (int i = 1; i < argc; ++i) {
+        // All switch checks are case-insensitive.
         const std::wstring argUpper = ToUpper(argv[i]);
 
         if (argUpper == L"/?") {
@@ -331,6 +355,7 @@ bool ParseArgs(int argc, wchar_t* argv[], Options& options) {
                 return false;
             }
 
+            // Consume the next token as the PID value.
             DWORD pid = 0;
             if (!ParsePid(argv[++i], pid)) {
                 std::wcout << L"ERROR: Invalid PID value: " << argv[i] << L"\n";
@@ -368,6 +393,7 @@ bool ParseArgs(int argc, wchar_t* argv[], Options& options) {
         }
 
         if (argUpper == L"/P") {
+            // /P with no value means prompt securely at runtime.
             if (i + 1 < argc && argv[i + 1][0] != L'/') {
                 options.password = argv[++i];
                 options.promptForPassword = false;
@@ -388,6 +414,7 @@ bool ParseArgs(int argc, wchar_t* argv[], Options& options) {
         return false;
     }
 
+    // Normalize remote host syntax before validating dependent switches.
     options.remoteSystem = NormalizeRemoteSystemName(options.remoteSystem);
 
     if (options.remoteSystem.empty() && (!options.user.empty() || !options.password.empty() || options.promptForPassword)) {
@@ -412,6 +439,7 @@ bool ParseArgs(int argc, wchar_t* argv[], Options& options) {
     return true;
 }
 
+// Build a local process snapshot with parent PID relationships.
 std::vector<ProcessInfo> EnumerateLocalProcesses() {
     std::vector<ProcessInfo> processes;
 
@@ -437,12 +465,15 @@ std::vector<ProcessInfo> EnumerateLocalProcesses() {
     return processes;
 }
 
+// Generic PDH array item used for both PID and parent-PID counters.
 struct CounterValue {
     std::wstring instanceName;
     LONGLONG value = 0;
 };
 
+// Read an instance-based PDH counter into a simple C++ vector.
 bool ReadFormattedCounterArray(HCOUNTER counter, std::vector<CounterValue>& values) {
+    // First PDH call asks for the required buffer size.
     DWORD bufferSize = 0;
     DWORD itemCount = 0;
     PDH_STATUS status = PdhGetFormattedCounterArrayW(counter, PDH_FMT_LARGE, &bufferSize, &itemCount, nullptr);
@@ -450,6 +481,7 @@ bool ReadFormattedCounterArray(HCOUNTER counter, std::vector<CounterValue>& valu
         return false;
     }
 
+    // Second call reads the actual counter items into the allocated buffer.
     std::vector<BYTE> buffer(bufferSize);
     auto* items = reinterpret_cast<PPDH_FMT_COUNTERVALUE_ITEM_W>(buffer.data());
     status = PdhGetFormattedCounterArrayW(counter, PDH_FMT_LARGE, &bufferSize, &itemCount, items);
@@ -473,6 +505,7 @@ bool ReadFormattedCounterArray(HCOUNTER counter, std::vector<CounterValue>& valu
     return true;
 }
 
+// Query remote performance counters to recover parent PID relationships.
 bool PopulateRemoteParentPids(const std::wstring& remoteSystem, std::vector<ProcessInfo>& processes, std::wstring& errorMessage) {
     HQUERY query = nullptr;
     if (PdhOpenQueryW(nullptr, 0, &query) != ERROR_SUCCESS) {
@@ -485,6 +518,7 @@ bool PopulateRemoteParentPids(const std::wstring& remoteSystem, std::vector<Proc
     const std::wstring pidPath = L"\\\\" + remoteSystem + L"\\Process(*)\\ID Process";
     const std::wstring parentPath = L"\\\\" + remoteSystem + L"\\Process(*)\\Creating Process ID";
 
+    // Add both counters to a single query so one collect gives aligned samples.
     const PDH_STATUS pidStatus = PdhAddEnglishCounterW(query, pidPath.c_str(), 0, &pidCounter);
     const PDH_STATUS parentStatus = PdhAddEnglishCounterW(query, parentPath.c_str(), 0, &parentCounter);
     if (pidStatus != ERROR_SUCCESS || parentStatus != ERROR_SUCCESS) {
@@ -511,6 +545,7 @@ bool PopulateRemoteParentPids(const std::wstring& remoteSystem, std::vector<Proc
         return false;
     }
 
+    // PDH instance names are not unique, so align entries by occurrence index.
     std::map<std::wstring, std::vector<size_t>> parentIndexesByName;
     for (size_t i = 0; i < parentValues.size(); ++i) {
         parentIndexesByName[parentValues[i].instanceName].push_back(i);
@@ -534,6 +569,7 @@ bool PopulateRemoteParentPids(const std::wstring& remoteSystem, std::vector<Proc
         }
 
         const CounterValue& parentValue = parentValues[it->second[nextIndex++]];
+        // Build a direct PID -> parent PID lookup for fast later assignment.
         parentsByPid[static_cast<DWORD>(pidValue.value)] = static_cast<DWORD>(parentValue.value);
     }
 
@@ -547,6 +583,7 @@ bool PopulateRemoteParentPids(const std::wstring& remoteSystem, std::vector<Proc
     return true;
 }
 
+// Enumerate remote processes through WTS and optionally enrich with parent PIDs.
 bool EnumerateRemoteProcesses(HANDLE serverHandle, const std::wstring& remoteSystem, bool includeParentPids, std::vector<ProcessInfo>& processes, std::wstring& errorMessage) {
     processes.clear();
 
@@ -574,11 +611,13 @@ bool EnumerateRemoteProcesses(HANDLE serverHandle, const std::wstring& remoteSys
     return true;
 }
 
+// Produce a post-order termination list so children are killed before parents.
 std::vector<DWORD> BuildTreeOrder(
     DWORD rootPid,
     const std::map<DWORD, std::vector<DWORD>>& childrenByParent,
     std::set<DWORD>& visited) {
 
+    // Post-order traversal: descend first so children are terminated first.
     std::vector<DWORD> order;
     if (!visited.insert(rootPid).second) {
         return order;
@@ -596,7 +635,9 @@ std::vector<DWORD> BuildTreeOrder(
     return order;
 }
 
+// Terminate one local PID and optionally return its image name.
 bool TerminateLocalPid(DWORD pid, bool force, std::wstring* imageOut = nullptr) {
+    // Need terminate rights; query rights allow optional image-name lookup.
     HANDLE processHandle = OpenProcess(PROCESS_TERMINATE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
     if (!processHandle) {
         return false;
@@ -617,10 +658,12 @@ bool TerminateLocalPid(DWORD pid, bool force, std::wstring* imageOut = nullptr) 
     return result == TRUE;
 }
 
+// Terminate one remote PID through the WTS API.
 bool TerminateRemotePid(HANDLE serverHandle, DWORD pid, bool force) {
     return WTSTerminateProcess(serverHandle, pid, force ? 1u : 0u) == TRUE;
 }
 
+// Resolve explicit /PID targets plus any /IM wildcard matches.
 std::vector<DWORD> ResolveTargetPids(const Options& options, const std::vector<ProcessInfo>& processes) {
     std::set<DWORD> uniqueTargets(options.pids.begin(), options.pids.end());
 
@@ -635,6 +678,7 @@ std::vector<DWORD> ResolveTargetPids(const Options& options, const std::vector<P
     return std::vector<DWORD>(uniqueTargets.begin(), uniqueTargets.end());
 }
 
+// Find process metadata for display messages.
 const ProcessInfo* FindProcess(const std::vector<ProcessInfo>& processes, DWORD pid) {
     for (const ProcessInfo& process : processes) {
         if (process.pid == pid) {
@@ -644,6 +688,7 @@ const ProcessInfo* FindProcess(const std::vector<ProcessInfo>& processes, DWORD 
     return nullptr;
 }
 
+// Main taskkill execution path for both local and remote systems.
 int RunTaskkill(const Options& options) {
     const bool isRemote = !options.remoteSystem.empty();
     ScopedHandle remoteToken;
@@ -652,6 +697,7 @@ int RunTaskkill(const Options& options) {
 
     std::vector<ProcessInfo> processes;
     if (isRemote) {
+        // Remote mode can impersonate alternate credentials before opening WTS.
         std::wstring errorMessage;
         if (!CreateRemoteLogonToken(options, remoteToken, errorMessage)) {
             std::wcout << L"ERROR: " << errorMessage << L"\n";
@@ -689,6 +735,7 @@ int RunTaskkill(const Options& options) {
 
     const std::vector<DWORD> targets = ResolveTargetPids(options, processes);
     if (targets.empty()) {
+        // Mirror taskkill-like feedback for each explicit selector.
         for (const std::wstring& imageName : options.imageNames) {
             std::wcout << L"ERROR: The process \"" << imageName << L"\" not found.\n";
         }
@@ -698,6 +745,7 @@ int RunTaskkill(const Options& options) {
         return 1;
     }
 
+    // Precompute parent -> children lists for /T termination ordering.
     std::map<DWORD, std::vector<DWORD>> childrenByParent;
     for (const ProcessInfo& process : processes) {
         childrenByParent[process.parentPid].push_back(process.pid);
@@ -714,6 +762,7 @@ int RunTaskkill(const Options& options) {
             order.push_back(target);
         }
 
+        // Execute termination in the computed order and print result per PID.
         for (const DWORD pid : order) {
             const ProcessInfo* processInfo = FindProcess(processes, pid);
             const std::wstring imageName = processInfo ? processInfo->imageName : L"UNKNOWN";
@@ -767,6 +816,7 @@ int RunTaskkill(const Options& options) {
 
 } // namespace
 
+// Wide-character entry point so Unicode process names and credentials work.
 int wmain(int argc, wchar_t* argv[]) {
     Options options;
     if (!ParseArgs(argc, argv, options)) {
