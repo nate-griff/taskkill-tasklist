@@ -13,13 +13,7 @@ Recreates a lightweight version of Window's taskkill and tasklist using Win32 AP
     - [Usage](#usage-1)
     - [Output](#output-1)
     - [Win32 API Headers Used](#win32-api-headers-used-1)
-- [Montioring Tools](#montioring-tools)
-    - [Sysmon](#sysmon)
-        - [Tasklist](#tasklist-1)
-        - [Taskkill](#taskkill-1)
-    - [Procmon](#procmon)
-        - [Tasklist](#tasklist-2)
-        - [Taskkill](#taskkill-2)
+
 </details>
 
 ## Tasklist
@@ -258,6 +252,6 @@ ERROR: The process "missing.exe" not found.
 
 - PDH status and message constants used with PDH return codes.
 - Functions used:
-    - No direct function calls from this header.
+    - No direct function calls from this header, just uses object types.
 
 </details>
